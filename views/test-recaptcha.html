@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>LinkedIn reCAPTCHA Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #0a66c2;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .test-button {
+            background: #0a66c2;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #004182;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LinkedIn reCAPTCHA Integration Test</h1>
+        
+        <div class="test-section">
+            <h3>1. Open reCAPTCHA Challenge</h3>
+            <p>Test the LinkedIn reCAPTCHA challenge page with a sample session ID.</p>
+            <button class="test-button" onclick="openRecaptchaChallenge()">Open Challenge</button>
+            <div id="challenge-result" class="result info" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Get Session Info</h3>
+            <p>Get information about a reCAPTCHA session.</p>
+            <input type="text" id="session-id" placeholder="Enter session ID" style="padding: 8px; margin-right: 10px;">
+            <button class="test-button" onclick="getSessionInfo()">Get Info</button>
+            <div id="session-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Test reCAPTCHA Verification</h3>
+            <p>Simulate a reCAPTCHA verification (requires token from actual reCAPTCHA).</p>
+            <input type="text" id="recaptcha-token" placeholder="Enter reCAPTCHA token" style="padding: 8px; margin-right: 10px; width: 300px;">
+            <br><br>
+            <input type="text" id="verify-session-id" placeholder="Enter session ID" style="padding: 8px; margin-right: 10px;">
+            <button class="test-button" onclick="testVerification()">Verify</button>
+            <div id="verify-result" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Environment Check</h3>
+            <p>Check if the server configuration is properly set up.</p>
+            <button class="test-button" onclick="checkEnvironment()">Check Config</button>
+            <div id="env-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        function generateSessionId() {
+            return 'test-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function openRecaptchaChallenge() {
+            const sessionId = generateSessionId();
+            const challengeUrl = `/recaptcha-challenge?sessionId=${sessionId}`;
+            
+            document.getElementById('challenge-result').style.display = 'block';
+            document.getElementById('challenge-result').innerHTML = `
+                Opening challenge for session: <strong>${sessionId}</strong><br>
+                URL: <a href="${challengeUrl}" target="_blank">${challengeUrl}</a>
+            `;
+            
+            // Open in new window
+            window.open(challengeUrl, '_blank', 'width=500,height=600');
+        }
+
+        async function getSessionInfo() {
+            const sessionId = document.getElementById('session-id').value.trim();
+            const resultDiv = document.getElementById('session-result');
+            
+            if (!sessionId) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Please enter a session ID';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/recaptcha-info/${sessionId}`);
+                const data = await response.json();
+                
+                resultDiv.style.display = 'block';
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `Error: ${data.error || 'Unknown error'}`;
+                }
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Network error: ${error.message}`;
+            }
+        }
+
+        async function testVerification() {
+            const token = document.getElementById('recaptcha-token').value.trim();
+            const sessionId = document.getElementById('verify-session-id').value.trim();
+            const resultDiv = document.getElementById('verify-result');
+            
+            if (!token) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.textContent = 'Please enter a reCAPTCHA token';
+                return;
+            }
+
+            try {
+                const response = await fetch('/verify-recaptcha', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        sessionId: sessionId || null,
+                        source: 'test-page'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.style.display = 'block';
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Network error: ${error.message}`;
+            }
+        }
+
+        async function checkEnvironment() {
+            const resultDiv = document.getElementById('env-result');
+            
+            try {
+                // Get environment information
+                const envResponse = await fetch('/api/recaptcha-env');
+                const envData = await envResponse.json();
+                
+                // Test if the reCAPTCHA challenge page loads
+                const challengeResponse = await fetch('/recaptcha-challenge?sessionId=test-config-check');
+                
+                resultDiv.style.display = 'block';
+                if (envResponse.ok && challengeResponse.ok) {
+                    const html = await challengeResponse.text();
+                    const hasSiteKey = html.includes('data-sitekey=') && !html.includes('RECAPTCHA_SITE_KEY_PLACEHOLDER');
+                    const hasScript = html.includes('google.com/recaptcha/api.js');
+                    
+                    resultDiv.className = 'result ' + (hasSiteKey && hasScript ? 'success' : 'error');
+                    resultDiv.innerHTML = `
+                        <strong>Environment Information:</strong><br>
+                        Environment: ${envData.environment}<br>
+                        Hostname: ${envData.hostname}<br>
+                        Is Localhost: ${envData.isLocalhost ? 'YES' : 'NO'}<br>
+                        Key Type: ${envData.keyType}<br>
+                        Site Key: ${envData.siteKey}<br>
+                        Secret Key Configured: ${envData.secretKeyConfigured ? 'YES' : 'NO'}<br>
+                        <br>
+                        <strong>Configuration Check Results:</strong><br>
+                        ${challengeResponse.ok ? '✓' : '✗'} reCAPTCHA challenge page: ${challengeResponse.ok ? 'OK' : 'FAILED'}<br>
+                        ${hasSiteKey ? '✓' : '✗'} Site key configured: ${hasSiteKey ? 'YES' : 'NO'}<br>
+                        ${hasScript ? '✓' : '✗'} reCAPTCHA script loaded: ${hasScript ? 'YES' : 'NO'}<br>
+                        <br>
+                        <strong>Status: ${hasSiteKey && hasScript && envData.secretKeyConfigured ? 'READY ✓' : 'NEEDS CONFIGURATION ⚠️'}</strong>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `Configuration check failed: ENV ${envResponse.status}, Challenge ${challengeResponse.status}`;
+                }
+            } catch (error) {
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `Configuration check error: ${error.message}`;
+            }
+        }
+
+        // Auto-generate a sample session ID for testing
+        document.getElementById('session-id').value = generateSessionId();
+        document.getElementById('verify-session-id').value = generateSessionId();
+    </script>
+</body>
+</html>

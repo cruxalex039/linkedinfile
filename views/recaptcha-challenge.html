@@ -1,0 +1,305 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>LinkedIn Security Verification - reCAPTCHA Challenge</title>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #f3f2ef;
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 40px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    .linkedin-logo {
+      color: #0a66c2;
+      font-size: 32px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    h1 {
+      color: #000;
+      font-size: 24px;
+      font-weight: 400;
+      margin-bottom: 8px;
+    }
+    p {
+      color: rgba(0, 0, 0, 0.6);
+      font-size: 14px;
+      line-height: 1.4;
+      margin-bottom: 32px;
+    }
+    #recaptcha-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+    .g-recaptcha {
+      margin: 0 auto;
+    }
+    button[type="submit"] {
+      background-color: #0a66c2;
+      color: white;
+      border: none;
+      border-radius: 24px;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      min-width: 120px;
+    }
+    button[type="submit"]:hover {
+      background-color: #004182;
+    }
+    button[type="submit"]:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    .status-message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: none;
+    }
+    .status-success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .status-error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="linkedin-logo">LinkedIn</div>
+    <h1>Security Verification</h1>
+    <p>To help keep LinkedIn secure, please complete the verification below.</p>
+
+    <form id="recaptcha-form">
+      <div class="g-recaptcha" 
+           data-sitekey="RECAPTCHA_SITE_KEY_PLACEHOLDER"
+           data-theme="light"
+           data-size="normal"
+           data-callback="onRecaptchaSuccess"
+           data-expired-callback="onRecaptchaExpired"
+           data-error-callback="onRecaptchaError"></div>
+      <input type="hidden" name="sessionId" id="sessionId" value="">
+      <button type="submit" id="verify-btn" disabled>Verify</button>
+      <div id="status-message" class="status-message"></div>
+    </form>
+  </div>
+
+  <script>
+    let recaptchaToken = null;
+
+    // reCAPTCHA callback functions
+    function onRecaptchaSuccess(token) {
+      recaptchaToken = token;
+      document.getElementById('verify-btn').disabled = false;
+      console.log('reCAPTCHA completed successfully');
+    }
+
+    function onRecaptchaExpired() {
+      recaptchaToken = null;
+      document.getElementById('verify-btn').disabled = true;
+      showStatus('reCAPTCHA expired. Please complete it again.', 'error');
+      console.log('reCAPTCHA expired');
+    }
+
+    function onRecaptchaError() {
+      recaptchaToken = null;
+      document.getElementById('verify-btn').disabled = true;
+      showStatus('reCAPTCHA error occurred. Please try again.', 'error');
+      console.log('reCAPTCHA error');
+    }
+
+    function showStatus(message, type) {
+      const statusDiv = document.getElementById('status-message');
+      statusDiv.textContent = message;
+      statusDiv.className = 'status-message status-' + type;
+      statusDiv.style.display = 'block';
+      
+      if (type === 'success') {
+        setTimeout(() => {
+          statusDiv.style.display = 'none';
+        }, 5000);
+      }
+    }
+
+    // Initialize page
+    (function(){
+      function qs(name){
+        name = name.replace(/[\[\]]/g, '\\$&');
+        const regex = new RegExp('[?&]'+name+'(=([^&#]*)|&|#|$)');
+        const results = regex.exec(window.location.href);
+        if (!results) return null;
+        if (!results[2]) return '';
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+      }
+
+      // Set session ID from query parameter
+      const sid = qs('sessionId');
+      if (sid) {
+        document.getElementById('sessionId').value = sid;
+        console.log('Session ID set:', sid);
+      }
+
+      // Replace placeholder with actual LinkedIn reCAPTCHA site key
+      const siteKeyMeta = document.querySelector('meta[name="recaptcha-site-key"]');
+      if (siteKeyMeta) {
+        const recaptchaDiv = document.querySelector('.g-recaptcha');
+        if (recaptchaDiv) {
+          recaptchaDiv.setAttribute('data-sitekey', siteKeyMeta.content);
+          console.log('LinkedIn reCAPTCHA site key applied:', siteKeyMeta.content);
+        }
+      }
+
+      // Determine environment and apply appropriate site key
+      const isLocalhost = window.location.hostname === 'localhost' || 
+                          window.location.hostname === '127.0.0.1' || 
+                          window.location.hostname.startsWith('192.168.');
+      
+      const recaptchaDiv = document.querySelector('.g-recaptcha');
+      const currentSiteKey = recaptchaDiv ? recaptchaDiv.getAttribute('data-sitekey') : '';
+      
+      // Your custom site key
+      const customSiteKey = '6LdYOf8rAAAAAApVaGMGqJjkKI3GlI6_HI5uq8I5';
+      
+      // If no valid site key is set, apply appropriate default
+      if (recaptchaDiv && (!currentSiteKey || currentSiteKey.includes('PLACEHOLDER'))) {
+        let siteKey;
+        
+        // Priority: Custom site key -> Test key for localhost -> LinkedIn key
+        if (customSiteKey) {
+          siteKey = customSiteKey;
+          console.log('Applied custom reCAPTCHA site key:', siteKey);
+        } else if (isLocalhost) {
+          // Use Google's test site key for localhost
+          siteKey = '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+          console.log('Applied Google test reCAPTCHA site key for localhost');
+        } else {
+          // Use LinkedIn's site key for production
+          siteKey = '6LcgI2cUAAAAAGjW0-O0ED_nmdJkUR7mhqz0zoEO';
+          console.log('Applied LinkedIn reCAPTCHA site key for production');
+        }
+        recaptchaDiv.setAttribute('data-sitekey', siteKey);
+      } else if (currentSiteKey) {
+        console.log('Using configured reCAPTCHA site key:', currentSiteKey);
+      }
+    })();
+
+    // Form submission handler
+    document.getElementById('recaptcha-form').addEventListener('submit', async function(e){
+      e.preventDefault();
+      
+      const verifyBtn = document.getElementById('verify-btn');
+      const originalText = verifyBtn.textContent;
+      
+      // Disable button and show loading state
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+      
+      try {
+        const token = recaptchaToken || grecaptcha.getResponse();
+        if (!token) {
+          showStatus('Please complete the reCAPTCHA verification.', 'error');
+          return;
+        }
+
+        const sessionId = document.getElementById('sessionId').value;
+        if (!sessionId) {
+          showStatus('Session ID is missing. Please try again.', 'error');
+          return;
+        }
+
+        showStatus('Verifying with LinkedIn...', 'info');
+
+        const resp = await fetch('/verify-recaptcha', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            token, 
+            sessionId,
+            source: 'linkedin-integration'
+          })
+        });
+
+        const data = await resp.json();
+        
+        if (data.success) {
+          showStatus('✓ Verification successful! Redirecting...', 'success');
+          
+          // Notify parent window or LinkedIn context if applicable
+          if (window.opener) {
+            window.opener.postMessage({ 
+              type: 'recaptcha_verified', 
+              sessionId, 
+              success: true 
+            }, '*');
+          }
+          
+          // Delay redirect to show success message
+          setTimeout(() => {
+            window.location.href = '/security-verification.html';
+          }, 2000);
+        } else {
+          const errorMessage = data.error || data['error-codes'] || 'Verification failed';
+          showStatus('Verification failed: ' + errorMessage, 'error');
+          
+          // Reset reCAPTCHA
+          if (typeof grecaptcha !== 'undefined' && grecaptcha.reset) {
+            grecaptcha.reset();
+            recaptchaToken = null;
+            verifyBtn.disabled = true;
+          }
+        }
+      } catch (err) {
+        console.error('Verification error:', err);
+        showStatus('Network error occurred. Please try again.', 'error');
+        
+        // Reset reCAPTCHA on error
+        if (typeof grecaptcha !== 'undefined' && grecaptcha.reset) {
+          grecaptcha.reset();
+          recaptchaToken = null;
+          verifyBtn.disabled = true;
+        }
+      } finally {
+        // Restore button state
+        verifyBtn.textContent = originalText;
+        if (recaptchaToken) {
+          verifyBtn.disabled = false;
+        }
+      }
+    });
+
+    // Handle messages from parent window (LinkedIn integration)
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'linkedin_session_id') {
+        document.getElementById('sessionId').value = event.data.sessionId;
+        console.log('Received LinkedIn session ID:', event.data.sessionId);
+      }
+    });
+  </script>
+</body>
+</html>

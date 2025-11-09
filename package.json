@@ -1,0 +1,41 @@
+{
+  "name": "linkedin-automation",
+  "version": "1.0.0",
+  "description": "LinkedIn automation system with advanced anti-detection measures, reCAPTCHA solving capabilities, and robust session management",
+  "main": "server2.js",
+  "scripts": {
+    "start": "node server2.js",
+    "dev": "nodemon server2.js --ignore 'cookies/*' --ignore 'public/images/puzzle/*' --ignore 'debug/*'",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "rimraf cookies/* public/images/puzzle/* debug/*",
+    "setup": "npm install && cp .env.example .env"
+  },
+  "keywords": ["linkedin", "automation", "recaptcha", "anti-detection", "fingerprinting", "proxy", "2captcha"],
+  "author": "cruxalex039@gmail.com",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cruxalex039/linkedinfile.git"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.55.0",
+    "axios": "^1.6.7",
+    "better-queue": "^3.8.12",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "express-session": "^1.18.1",
+    "form-data": "^4.0.0",
+    "fs-extra": "^11.3.0",
+    "p-queue": "^6.6.2",
+    "playwright": "^1.55.0",
+    "puppeteer": "^22.15.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-recaptcha": "^3.6.8",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
