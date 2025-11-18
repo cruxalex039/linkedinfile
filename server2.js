@@ -135,6 +135,10 @@ app.use(
 app.use(express.json());
 app.use(express.static("public"));
 
+// Import and mount routes
+const captchaRoutes = require('./routes/captcha');
+app.use('/api/captcha', captchaRoutes);
+
 // Middleware to check CAPTCHA verification
 const requireCaptcha = (req, res, next) => {
   if (!req.session.captchaVerified) {
