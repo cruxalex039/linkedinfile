@@ -33,9 +33,9 @@ const fingerprintManager = new FingerprintCookieManager();
 const app = express();
 // ...existing code...
 
-// Default route for root URL
+// Default route for root URL - serve index.html
 app.get('/', (req, res) => {
-  res.send('<h2>LinkedIn Automation Backend is running.<br>Use the API endpoints or frontend UI.</h2>');
+  res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 const port = process.env.PORT || 3000;
 
